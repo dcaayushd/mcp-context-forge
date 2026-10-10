@@ -1054,12 +1054,46 @@ class TestServerEndpoints:
         assert response.status_code == 201
         mock_create.assert_called_once()
 
-    def test_create_server_rejects_non_uuid_associated_tools(self, test_client, auth_headers, monkeypatch):
+    @patch("mcpgateway.main.server_service.register_server")
+    def test_create_server_accepts_camel_case_associated_tools(self, mock_create, test_client, auth_headers):
+        """Test that POST /servers maps camelCase association fields to the schema."""
+        mock_create.return_value = ServerRead(**MOCK_SERVER_READ)
+        valid_uuid = "550e8400-e29b-41d4-a716-446655440000"  # pragma: allowlist secret
+        req = {
+            "server": {
+                "name": "test_server",
+                "associatedTools": [valid_uuid],
+            },
+            "team_id": None,
+            "visibility": "public",
+        }
+
+        response = test_client.post("/servers/", json=req, headers=auth_headers)
+
+        assert response.status_code == 201
+        assert mock_create.call_args.args[1].associated_tools == [valid_uuid.replace("-", "")]
+
+    def test_create_server_rejects_non_uuid_associated_tools(self, test_client, auth_headers):
         """Test that POST /servers rejects non-UUID values in associated_tools with 422."""
         req = {
             "server": {
                 "name": "test_server",
                 "associated_tools": ["my-tool-name"],
+            },
+            "team_id": None,
+            "visibility": "public",
+        }
+        response = test_client.post("/servers/", json=req, headers=auth_headers)
+        assert response.status_code == 422
+        detail = response.json()["detail"][0]
+        assert "Invalid ID format" in detail["msg"]
+
+    def test_create_server_rejects_non_uuid_camel_case_associated_tools(self, test_client, auth_headers):
+        """Test that POST /servers rejects non-UUID camelCase association values with 422."""
+        req = {
+            "server": {
+                "name": "test_server",
+                "associatedTools": ["my-tool-name"],
             },
             "team_id": None,
             "visibility": "public",

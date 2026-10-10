@@ -4665,7 +4665,7 @@ class ListFilters(BaseModelWithConfigDict):
 # --- Server Schemas ---
 
 
-class ServerCreate(BaseModel):
+class ServerCreate(BaseModelWithConfigDict):
     """
     Schema for creating a new server.
 

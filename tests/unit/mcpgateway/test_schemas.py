@@ -784,6 +784,29 @@ class TestServerSchemas:
         assert minimal.associated_resources is None
         assert minimal.associated_prompts is None
 
+    def test_server_create_accepts_camel_case_associations(self):
+        """Test camelCase association aliases populate snake_case fields."""
+        tool_id = "550e8400-e29b-41d4-a716-446655440001"  # pragma: allowlist secret
+        resource_id = "550e8400-e29b-41d4-a716-446655440002"  # pragma: allowlist secret
+        prompt_id = "550e8400-e29b-41d4-a716-446655440003"  # pragma: allowlist secret
+        agent_id = "550e8400-e29b-41d4-a716-446655440004"  # pragma: allowlist secret
+
+        server = ServerCreate.model_validate(
+            {
+                "name": "  Test Server  ",
+                "associatedTools": [f"  {tool_id}  "],
+                "associatedResources": [f"  {resource_id}  "],
+                "associatedPrompts": [f"  {prompt_id}  "],
+                "associatedA2aAgents": [f"  {agent_id}  "],
+            }
+        )
+
+        assert server.name == "Test Server"
+        assert server.associated_tools == [tool_id.replace("-", "")]
+        assert server.associated_resources == [resource_id.replace("-", "")]
+        assert server.associated_prompts == [prompt_id.replace("-", "")]
+        assert server.associated_a2a_agents == [agent_id.replace("-", "")]
+
     def test_server_update(self):
         """Test ServerUpdate model."""
         # Use valid UUIDs for associations
